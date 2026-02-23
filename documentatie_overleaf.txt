@@ -1,0 +1,781 @@
+	\documentclass[12pt,a4paper]{article}
+	\usepackage{graphicx}
+	\usepackage{float}
+
+	\usepackage[utf8]{inputenc}
+	\usepackage[romanian]{babel}
+	\usepackage{geometry}
+	\usepackage{booktabs}
+	\usepackage{setspace}
+	\usepackage{enumitem}
+	\usepackage{hyperref}
+	\usepackage{xcolor}
+	\usepackage{listings}
+
+	% Configurare listings pentru cod Java (stil IDE)
+	\definecolor{codegreen}{rgb}{0.25,0.49,0.48}
+	\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+	\definecolor{codepurple}{rgb}{0.58,0,0.82}
+	\definecolor{codeblue}{rgb}{0.13,0.29,0.53}
+	\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+	\definecolor{keywordcolor}{rgb}{0.13,0.29,0.53}
+
+	\lstdefinestyle{javastyle}{
+		backgroundcolor=\color{backcolour},
+		commentstyle=\color{codegreen}\itshape,
+		keywordstyle=\color{keywordcolor}\bfseries,
+		numberstyle=\tiny\color{codegray},
+		stringstyle=\color{codepurple},
+		basicstyle=\ttfamily\footnotesize,
+		breakatwhitespace=false,
+		breaklines=true,
+		captionpos=b,
+		keepspaces=true,
+		numbers=left,
+		numbersep=5pt,
+		showspaces=false,
+		showstringspaces=false,
+		showtabs=false,
+		tabsize=4,
+		frame=single,
+		rulecolor=\color{codegray},
+		language=Java,
+		morekeywords={String, int, boolean, null, return, if, else, private, public, new}
+	}
+
+	\lstdefinestyle{mipsstyle}{
+		backgroundcolor=\color{backcolour},
+		commentstyle=\color{codegreen}\itshape,
+		keywordstyle=\color{codeblue}\bfseries,
+		basicstyle=\ttfamily\footnotesize,
+		breaklines=true,
+		captionpos=b,
+		keepspaces=true,
+		numbers=left,
+		numbersep=5pt,
+		frame=single,
+		rulecolor=\color{codegray},
+		morekeywords={ADDI, ADD, SUB, AND, OR, XOR, SLT, SLL, SRL, LW, SW, BEQ, BGEZ, J}
+	}
+
+	\lstset{style=javastyle}
+
+	\geometry{margin=2.5cm}
+	\setstretch{1.3}
+
+	\begin{document}
+		
+		% ===================== PAGINĂ DE TITLU SEPARATĂ =====================
+		\begin{titlepage}
+			\centering
+			\vspace*{\fill}
+			{\Large\textbf{Simulator de UCP în arhitectură pipeline (MIPS)}\\[0.8em]}
+			{\large\textit{Structura sistemelor de calcul}}\\[2.0em]
+			
+			{\textbf{Autor: Teodor Suteu}}\\[0.5em]
+			Universitatea Tehnică din Cluj-Napoca\\
+			Facultatea de Automatică și Calculatoare\\[3em]
+			
+			\vfill
+			
+		\end{titlepage}
+		
+		% ===================== TEXTUL VECHI (PĂSTRAT ÎNTEGRAL) =====================
+		
+		\section{Introducere}
+		
+		\subsection{Propunere de proiect}
+		
+		Proiectul \textbf{„Simulator de UCP în arhitectură pipeline (MIPS)”} are ca scop realizarea unui program care simulează comportamentul unei unități centrale de prelucrare (UCP) de tip \textit{pipeline}, conform arhitecturii MIPS. 
+		
+		Prin intermediul simulatorului, utilizatorul va putea observa modul în care instrucțiunile sunt executate în paralel, pe etape, evidențiind avantajele și problemele specifice execuției pipeline (hazarduri de date, control și structurale).
+		
+		Programul va fi realizat în \textbf{Java}, datorită portabilității, suportului pentru programare orientată pe obiecte și facilității de creare a unei interfețe grafice (GUI) care să ilustreze stările pipeline-ului.
+		
+		Simulatorul va permite:
+		
+		\begin{itemize}[nosep]
+			\item încărcarea unui set de instrucțiuni (în format asemănător cu MIPS assembly);
+			\item afișarea etapelor pipeline (IF, ID, EX, MEM, WB) pentru fiecare ciclu de ceas;
+			\item vizualizarea registrelor, memoriei și a eventualelor hazarduri detectate;
+			\item execuția pas cu pas (step-by-step) sau automată (run).
+		\end{itemize}
+		
+		Proiectul contribuie la înțelegerea practică a modului de funcționare internă a procesoarelor moderne și a felului în care execuția paralelă la nivel de instrucțiuni îmbunătățește performanța sistemelor.
+		
+		\section{Studiu bibliografic}
+		
+		\subsection{Context teoretic}
+		
+		Arhitecturile de tip \textit{pipeline} sunt o componentă fundamentală în designul procesoarelor moderne. Ele permit suprapunerea execuției mai multor instrucțiuni, reducând timpul total de execuție și crescând \textit{throughput-ul} procesorului.  
+		
+		Arhitectura \textbf{MIPS} (Microprocessor without Interlocked Pipeline Stages) este adesea utilizată în scop educațional datorită structurii sale clare și a setului de instrucțiuni simplificate (RISC). Ea are 32 de registre de uz general și o arhitectură pe 5 etape distincte de pipeline:
+		
+		\begin{enumerate}[nosep]
+			\item \textbf{IF (Instruction Fetch)} – preluarea instrucțiunii din memorie;
+			\item \textbf{ID (Instruction Decode)} – decodificarea instrucțiunii și citirea registrelor;
+			\item \textbf{EX (Execute)} – execuția operației aritmetice/logice sau calcularea adresei de memorie;
+			\item \textbf{MEM (Memory Access)} – accesul la memorie (citire/scriere);
+			\item \textbf{WB (Write Back)} – scrierea rezultatului în registru.
+		\end{enumerate}
+		
+		Pe parcursul execuției pot apărea diverse tipuri de \textbf{hazarduri}:
+		
+		\begin{itemize}[nosep]
+			\item \textbf{Hazarduri de date (Data Hazards)} – când o instrucțiune depinde de rezultatul alteia care nu s-a terminat încă;
+			\item \textbf{Hazarduri de control (Control Hazards)} – apărute la instrucțiuni de salt (branch/jump);
+			\item \textbf{Hazarduri structurale (Structural Hazards)} – când mai multe instrucțiuni solicită aceeași resursă hardware simultan.
+		\end{itemize}
+		
+		
+		\subsection{Alegerea limbajului Java}
+		
+		Limbajul Java oferă mai multe avantaje pentru implementarea unui simulator educațional:
+		
+		\begin{itemize}[nosep]
+			\item suport pentru \textbf{interfețe grafice} (Swing / JavaFX);
+			\item modelare ușoară a componentelor hardware prin \textbf{clase și obiecte} (de exemplu, \texttt{Instruction}, \texttt{Register}, \texttt{PipelineStage});
+			\item \textbf{gestionare simplă a memoriei} (garbage collection);
+			\item \textbf{portabilitate} (același cod rulează pe orice sistem cu JVM).
+		\end{itemize}
+		
+		\section{Plan de lucru}
+		
+		\begin{center}
+			\begin{tabular}{@{\hspace{0.2cm}}p{1cm}@{\hspace{0.6cm}}p{5cm}@{\hspace{0.6cm}}p{5cm}@{\hspace{0.6cm}}p{2.5cm}@{}}
+				\toprule
+				\textbf{Etapă} & \textbf{Descriere} & \textbf{Rezultat așteptat} & \textbf{Deadline estimativ} \\ 
+				\midrule
+				1 & Documentare și planificare: studiu privind arhitectura MIPS, concepte de pipeline și identificarea componentelor principale ale simulatorului & Bază teoretică solidă și plan clar de implementare & Săptămâna 1 \\
+				2 & Proiectarea structurii Java: definirea claselor pentru instrucțiuni, registre, memorie și etapele pipeline & Structură de cod coerentă și extensibilă & Săptămâna 2 \\
+				3 & Implementarea simulatorului de bază: execuția instrucțiunilor în pipeline, gestionarea registrelor și memoriei & Pipeline funcțional la nivel de consolă & Săptămâna 3 \\
+				4 & Implementarea interfeței grafice (JavaFX / Swing): vizualizarea grafică a etapelor pipeline și a stării registrelor & Interfață intuitivă și interactivă & Săptămâna 4 \\
+				5 & Integrare finală, testare și redactare document final & Simulator complet, testat și documentat & Săptămâna 5 \\
+				\bottomrule
+				\\
+				\\
+			\end{tabular}
+		\end{center}
+		
+		% ===================== NOUTĂȚI / COMPLETĂRI ÎN BAZA CODULUI =====================
+		\section{Implementare și rezultate}
+		
+		\subsection{Arhitectura sistemului implementat}
+		
+		Simulatorul implementat urmează o arhitectură modulară, cu următoarele componente principale:
+		
+		\begin{itemize}[nosep]
+			\item \textbf{MIPSSimulator} - clasa principală care coordonează execuția pipeline-ului
+			\item \textbf{RegisterFile} - gestionarea celor 32 de registre MIPS
+			\item \textbf{Memory} - memoria principală de 4KB
+			\item \textbf{ALU} - unitatea aritmetică-logică
+			\item \textbf{ControlUnit} - unitatea de control care generează semnalele de comandă
+			\item \textbf{InstructionParser} - parser pentru instrucțiunile assembly
+			\item \textbf{Registrele pipeline} - IF/ID, ID/EX, EX/MEM, MEM/WB
+		\end{itemize}
+		
+		\subsection{Setul de instrucțiuni implementat}
+		
+		Simulatorul suportă un set complet de instrucțiuni MIPS, organizate în trei categorii:
+		
+		\subsubsection{Instrucțiuni de tip R (Register)}
+		\begin{itemize}[nosep]
+			\item \texttt{ADD \$rd, \$rs, \$rt} - adunare
+			\item \texttt{SUB \$rd, \$rs, \$rt} - scădere
+			\item \texttt{AND \$rd, \$rs, \$rt} - ȘI logic
+			\item \texttt{OR \$rd, \$rs, \$rt} - SAU logic
+			\item \texttt{XOR \$rd, \$rs, \$rt} - SAU exclusiv
+			\item \texttt{SLT \$rd, \$rs, \$rt} - set-on-less-than
+			\item \texttt{SLL \$rd, \$rt, shamt} - shift left logical
+			\item \texttt{SRL \$rd, \$rt, shamt} - shift right logical
+		\end{itemize}
+		
+		\subsubsection{Instrucțiuni de tip I (Immediate)}
+		\begin{itemize}[nosep]
+			\item \texttt{ADDI \$rt, \$rs, immediate} - adunare cu constantă
+			\item \texttt{ORI \$rt, \$rs, immediate} - SAU cu constantă
+			\item \texttt{LW \$rt, offset(\$rs)} - încărcare din memorie
+			\item \texttt{SW \$rt, offset(\$rs)} - scriere în memorie
+			\item \texttt{BEQ \$rs, \$rt, offset} - branch on equal
+			\item \texttt{BGEZ \$rs, offset} - branch on greater than or equal to zero
+		\end{itemize}
+		
+		\subsubsection{Instrucțiuni de tip J (Jump)}
+		\begin{itemize}[nosep]
+			\item \texttt{J address} - salt necondiționat
+		\end{itemize}
+		
+		\subsection{Implementarea pipeline-ului}
+		
+		Pipeline-ul este implementat conform modelului clasic MIPS cu 5 etape:
+		
+		\subsubsection{IF (Instruction Fetch)}
+		\begin{itemize}[nosep]
+			\item Preia instrucțiunea din memoria de instrucțiuni la adresa PC
+			\item Incrementează PC pentru următoarea instrucțiune
+			\item Transferă instrucțiunea în registrul IF/ID
+		\end{itemize}
+		
+		\subsubsection{ID (Instruction Decode)}
+		\begin{itemize}[nosep]
+			\item Decodifică instrucțiunea și identifică opcode-ul
+			\item Citește registrele sursă din registre file
+			\item Semnalează unității de control tipul instrucțiunii
+			\item Calculează adresa de salt pentru instrucțiunile branch
+			\item Transferă datele în registrul ID/EX
+		\end{itemize}
+		
+		\subsubsection{EX (Execute)}
+		\begin{itemize}[nosep]
+			\item Execută operația aritmetică/logică în ALU
+			\item Calculează adresa efectivă pentru accesul la memorie
+			\item Evaluează condițiile de branch
+			\item Transferă rezultatele în registrul EX/MEM
+		\end{itemize}
+		
+		\subsubsection{MEM (Memory Access)}
+		\begin{itemize}[nosep]
+			\item Accesează memoria pentru instrucțiunile LW/SW
+			\item Finalizează instrucțiunile de branch
+			\item Transferă datele în registrul MEM/WB
+		\end{itemize}
+		
+		\subsubsection{WB (Write Back)}
+		\begin{itemize}[nosep]
+			\item Scrie rezultatul în registrul destinație
+			\item Poate scrie fie din ALU, fie din memorie (memToReg)
+		\end{itemize}
+		
+		\subsubsection{Schema MIPS Pipeline}
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=0.85\textwidth]{SchemaMIPS_Pipeline.jpg}
+			\caption{Arhitectura pipeline MIPS în 5 etape}
+			\label{fig:pipeline_mips}
+		\end{figure}
+		
+		\subsection{Detalii de implementare}
+		
+		\subsubsection {Diagrama de clase}
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=0.85\textwidth]{DiagramaClaseMIPS.png}
+			\caption{Diagrama claselor folosite in implementarea simulatorului in consola}
+			\label{fig:class_diagram}
+		\end{figure}
+		
+		\vspace{2\baselineskip}
+		
+		
+		Implementarea simulatorului MIPS a fost realizată într-un stil modular, fiecare componentă a arhitecturii hardware fiind mapată pe o clasă Java distinctă. Obiectele sunt create și conectate în clasa principală \texttt{MIPSSimulator}, care gestionează execuția ciclurilor de ceas și avansarea instrucțiunilor în pipeline. În continuare sunt prezentate detalii suplimentare despre componentele critice ale implementării.
+		
+		\subsubsection{Structura claselor și rolul lor în execuție}
+		
+		Fiecare clasă reprezintă o parte reală a procesorului MIPS:
+		
+		\begin{itemize}
+			\item \textbf{ALU}: implementează operațiile aritmetice și logice (ADD, SUB, AND, OR, XOR, SLT, SLL, SRL). Clasa oferă metode pentru calculul rezultatului și un indicator \texttt{zero} utilizat în evaluarea condițiilor de branch.
+			
+			\item \textbf{ControlUnit}: pe baza opcode-ului instrucțiunii generează semnalele de control. Semnalele precum \texttt{regWrite}, \texttt{memToReg}, \texttt{aluSrc} sau \texttt{branch} sunt ulterior propagate prin registrele pipeline.
+			
+			\item \textbf{Instruction}: modelează instrucțiunile în formă decodificată, stocând câmpurile \texttt{opcode}, \texttt{rs}, \texttt{rt}, \texttt{rd}, \texttt{immediate}, \texttt{shamt} și \texttt{address}. 
+			
+			\item \textbf{InstructionParser}: primește instrucțiuni în format asemănător limbajului MIPS și le transformă în obiecte \texttt{Instruction}. Parsarea este bazată pe identificarea tipului de instrucțiune (R/I/J) și extragerea operandului corespunzător.
+			
+			\item \textbf{RegisterFile}: reprezintă cele 32 de registre MIPS. Asigură citirea simultană a două registre și scrierea în altul, conform semnalului \texttt{regWrite}.
+			
+			\item \textbf{Memory}: modelează memoria de date, organizată într-un vector de întregi. Oferă metode de \texttt{load} și \texttt{store} utilizate în etapa MEM.
+		\end{itemize}
+		
+		\subsubsection{Registrele pipeline: structură și propagarea datelor}
+		
+		Pentru a simula fidel execuția paralelă, fiecare din cele cinci etape ale pipeline-ului folosește un registru dedicat:
+		
+		\begin{itemize}
+			\item \texttt{IF\_ID\_Register}: stochează instrucțiunea preluată din memorie și valoarea curentă a PC. 
+			
+			\item \texttt{ID\_EX\_Register}: stochează datele citite din registre, valoarea imediată, identificatorii registrelor \texttt{rs}, \texttt{rt}, \texttt{rd} și semnalele de control generate în etapa ID.
+			
+			\item \texttt{EX\_MEM\_Register}: conține rezultatul ALU, semnalul \texttt{zero}, valoarea pentru scriere în memorie și registrul destinație calculat după semnalul \texttt{regDst}.
+			
+			\item \texttt{MEM\_WB\_Register}: stochează datele citite din memorie și rezultatul ALU, urmând ca acestea să fie selectate în funcție de semnalul \texttt{memToReg}.
+		\end{itemize}
+		
+		Toate registrele pipeline oferă metoda \texttt{clear()}, utilizată la reset sau în caz de flush (de exemplu, după o instrucțiune de branch).
+		
+		\subsubsection{Fluxul de execuție în clasa MIPSSimulator}
+		
+		Clasa \texttt{MIPSSimulator} orchestrează activitatea întregului pipeline. Execuția unui ciclu este împărțită în cinci metode corespunzătoare etapelor MIPS:
+		
+		\begin{itemize}
+			\item \texttt{fetch()}: citește instrucțiunea din memorie și avansează PC-ul.
+			\item \texttt{decode()}: interpretează instrucțiunea, generează semnalele de control și citește registrele.
+			\item \texttt{execute()}: lansează operația ALU și determină adresa efectivă pentru accesul la memorie.
+			\item \texttt{memoryAccess()}: efectuează încărcări sau stocări, precum și rezolvarea condițiilor de branch.
+			\item \texttt{writeback()}: scrie rezultatul final în registrul destinație dacă execuția o impune.
+		\end{itemize}
+		
+		Execuția pipeline-ului este ciclică, iar la fiecare iterație instrucțiile avansează simultan prin etape. Pentru monitorizare, simulatorul oferă metoda \texttt{printPipelineState()}, care afișează în consolă starea fiecărui registru pipeline.
+		
+		\subsubsection{Gestionarea instrucțiunilor și încărcarea programului}
+		
+		Programul MIPS este reprezentat ca un vector de obiecte \texttt{Instruction}. Încărcarea acestora se face prin metoda \texttt{loadProgram()}, care plasează instrucțiile în memoria de instrucțiuni și resetează PC-ul. Fiecare instrucțiune textuală este procesată prin \texttt{InstructionParser}.
+		
+		
+		
+		\subsection{Detecția și rezolvarea hazardurilor}
+		
+		O contribuție majoră a acestui proiect este implementarea completă a mecanismelor de detectare și rezolvare a hazardurilor în pipeline. Această secțiune prezintă detaliile tehnice ale implementării.
+		
+		\subsubsection{Hazarduri de date (Data Hazards) - Forwarding}
+		
+		Hazardurile de date (RAW - Read After Write) apar când o instrucțiune depinde de rezultatul unei instrucțiuni anterioare care nu s-a terminat încă. Fără forwarding, pipeline-ul ar trebui să aștepte 2-3 cicluri până când datele sunt scrise în registru.
+		
+		\textbf{Implementarea Forwarding-ului}
+		
+		Metoda \texttt{getForwardedValue()} din clasa \texttt{MIPSSimulator} implementează două căi de forwarding:
+		
+		\begin{lstlisting}[style=javastyle]
+	private int getForwardedValue(int sourceReg, int originalValue) {
+		if (sourceReg == 0) return 0;  // $0 este mereu 0
+		
+		// EX-to-EX forwarding (prioritate maxima)
+		if (exMem.instruction != null) {
+			if (control.regWrite && exMem.writeRegister == sourceReg) {
+				if (!exMem.instruction.getOpcode().equals("LW")) {
+					return exMem.aluResult;
+				}
+			}
+		}
+		
+		// MEM-to-EX forwarding
+		if (savedMemWb.instruction != null) {
+			if (control.regWrite && savedMemWb.writeRegister == sourceReg) {
+				return control.memToReg ? savedMemWb.memData 
+										: savedMemWb.aluResult;
+			}
+		}
+		return originalValue;
+	}
+		\end{lstlisting}
+		
+		\textbf{Căile de forwarding:}
+		\begin{itemize}[nosep]
+			\item \textbf{EX-to-EX}: Rezultatul ALU din registrul EX/MEM este transmis direct către intrarea ALU din etapa EX curentă. Aceasta rezolvă dependențele între instrucțiuni consecutive.
+			\item \textbf{MEM-to-EX}: Datele din registrul MEM/WB (salvate înainte de a fi suprascrise) sunt transmise către etapa EX. Aceasta rezolvă dependențele cu o instrucțiune de două cicluri distanță.
+		\end{itemize}
+		
+		\textbf{Prioritatea forwarding-ului}: EX-to-EX are prioritate mai mare pentru că conține valoarea mai recentă.
+		
+		% TODO: Screenshot cu log-ul care arată mesaje de forwarding
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}SCREENSHOT: Log de execuție cu mesaje "[HAZARD SOLVED] Forwarding \$X: old -> new"\vspace{2cm}}}
+			\caption{Exemplu de forwarding - mesaje în log}
+			\label{fig:forwarding}
+		\end{figure}
+		
+		\subsubsection{Hazarduri Load-Use - Stalling}
+		
+		Când o instrucțiune LW este urmată imediat de o instrucțiune care folosește valoarea încărcată, forwarding-ul nu este suficient deoarece datele nu sunt disponibile până după etapa MEM.
+		
+		\textbf{Detectarea hazardului Load-Use:}
+		
+		\begin{lstlisting}[style=javastyle]
+	private boolean detectLoadUseHazard(Instruction currentInstr) {
+		if (idEx.instruction == null) return false;
+		
+		// Verifica daca instructiunea din EX este LW
+		if (!idEx.instruction.getOpcode().equals("LW")) return false;
+		
+		int loadDestReg = idEx.rt;  // LW scrie in rt
+		
+		// Verifica daca instructiunea curenta citeste din
+		// registrul destinatie al LW
+		if (currentInstr.getRs() == loadDestReg || 
+			currentInstr.getRt() == loadDestReg) {
+			return true;  // Hazard detectat!
+		}
+		return false;
+	}
+		\end{lstlisting}
+		
+		\clearpage
+		\textbf{Gestionarea stall-ului în etapa decode():}
+		
+		\begin{lstlisting}[style=javastyle]
+	if (enableHazardDetection && detectLoadUseHazard(instr)) {
+		idEx.clear();      // Insereaza bubble in ID/EX
+		pc--;              // Re-fetch instructiunea blocata
+		stallCount++;      // Statistici
+		return;
+	}
+		\end{lstlisting}
+		
+		Bubble-ul (NOP) se propagă prin pipeline ca o instrucțiune normală, ocupând slot-ul până când ajunge în WB unde dispare.
+		
+		% TODO: Screenshot cu stall în GUI
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}SCREENSHOT: Pipeline GUI cu "empty" în etapa ID în timpul stall-ului\vspace{2cm}}}
+			\caption{Vizualizarea bubble-ului în timpul unui stall}
+			\label{fig:stall}
+		\end{figure}
+		
+		\subsubsection{Hazarduri de control (Control Hazards)}
+		
+		Hazardurile de control apar la instrucțiunile de salt (branch/jump) deoarece PC-ul este actualizat înainte de a ști dacă saltul va fi luat.
+		
+		\textbf{Instrucțiuni implementate:}
+		\begin{itemize}[nosep]
+			\item \textbf{BEQ \$rs, \$rt, offset}: Salt dacă \$rs == \$rt. Target = (PC+1) + offset
+			\item \textbf{BGEZ \$rs, offset}: Salt dacă \$rs >= 0. Target = (PC+1) + offset
+			\item \textbf{J address}: Salt necondiționat la adresa specificată
+		\end{itemize}
+		
+		\textbf{Implementarea pipeline flush:}
+		
+		\begin{lstlisting}[style=javastyle]
+	// In metoda execute()
+	if (idEx.branch) {
+		if (instr.getOpcode().equals("BEQ") && exMem.zero) {
+			pc = exMem.branchTarget;
+			ifId.clear();  // Flush - goleste instructiunea gresita
+		}
+	}
+
+	if (idEx.jump) {
+		pc = instr.getAddress();
+		ifId.clear();  // Flush
+	}
+		\end{lstlisting}
+		
+		% TODO: Screenshot cu branch/jump în log
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}SCREENSHOT: Log cu mesaj "[CONTROL HAZARD] Branch taken - flushing pipeline"\vspace{2cm}}}
+			\caption{Exemplu de control hazard - flush la branch}
+			\label{fig:control_hazard}
+		\end{figure}
+		
+		\subsubsection{Salvarea semnalelor de control în registrele pipeline}
+		
+		O problemă critică identificată în implementare a fost faptul că toate etapele utilizau același obiect \texttt{ControlUnit}, ceea ce ducea la suprascrierea semnalelor de control.
+		
+		\textbf{Soluția implementată:}
+		
+		Semnalele de control sunt salvate în registrul ID/EX în etapa decode() și folosite în etapa execute():
+		
+		\begin{lstlisting}[style=javastyle]
+	// In decode() - salvam semnalele
+	idEx.regWrite = control.regWrite;
+	idEx.aluSrc = control.aluSrc;
+	idEx.branch = control.branch;
+	idEx.jump = control.jump;
+
+	// In execute() - folosim semnalele salvate
+	int aluInput2 = idEx.aluSrc ? idEx.immediate : forwardedData2;
+	exMem.writeRegister = idEx.regDst ? idEx.rd : idEx.rt;
+		\end{lstlisting}
+		
+		\subsection{Interfața grafică (GUI)}
+		
+		Simulatorul include o interfață grafică realizată cu Java Swing, proiectată pentru vizualizarea interactivă a execuției pipeline.
+		
+		\subsubsection{Arhitectura GUI}
+		
+		Clasa \texttt{MIPSSimulatorGUI} extinde \texttt{JFrame} și conține:
+		
+		\begin{itemize}[nosep]
+			\item \textbf{Header Panel}: Titlu, contor cicluri, contor stalls, status
+			\item \textbf{Left Panel}: Editor program + Log execuție
+			\item \textbf{Right Panel}: Vizualizare pipeline + Tabel registre + Tabel memorie
+			\item \textbf{Control Panel}: Butoane Load, Step, Run All, Reset
+		\end{itemize}
+		
+		\subsubsection{Tema vizuală dark}
+		
+		Culorile sunt definite ca constante pentru consistență:
+		
+		\begin{lstlisting}[style=javastyle]
+	private static final Color BG_DARK = new Color(30, 30, 35);
+	private static final Color ACCENT_BLUE = new Color(100, 149, 237);
+	private static final Color STAGE_IF = new Color(70, 130, 180);
+	private static final Color STAGE_ID = new Color(60, 179, 113);
+	private static final Color STAGE_EX = new Color(255, 140, 0);
+	private static final Color STAGE_MEM = new Color(186, 85, 211);
+	private static final Color STAGE_WB = new Color(220, 20, 60);
+		\end{lstlisting}
+		
+		\subsubsection{Vizualizarea pipeline}
+		
+		Cele 5 etape sunt afișate ca panouri colorate, fiecare arătând instrucțiunea curentă cu registrul destinație pentru diferențiere (ex: "ADDI \$1", "ADD \$3").
+		
+		% TODO: Screenshot cu GUI complet
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.95\textwidth}{\centering\vspace{4cm}SCREENSHOT: Interfața grafică completă - toate componentele vizibile\vspace{4cm}}}
+			\caption{Interfața grafică a simulatorului MIPS}
+			\label{fig:gui}
+		\end{figure}
+		
+		\subsubsection{Selectorul de programe}
+		
+		GUI-ul include un selector dropdown cu 5 programe exemple predefinite:
+		
+		\begin{enumerate}[nosep]
+			\item \textbf{Basic Hazards}: Demonstrează forwarding și load-use stall
+			\item \textbf{Branch Loop (BEQ)}: Buclă cu BEQ și J (numără de la 0 la 5)
+			\item \textbf{Jump Test}: Testează instrucțiunea J
+			\item \textbf{Counter Loop (BGEZ)}: Sumă 5+4+3+2+1 cu BGEZ
+			\item \textbf{Complex Program}: Toate tipurile de instrucțiuni + bucle
+		\end{enumerate}
+		
+		% TODO: Screenshot cu selectorul de programe
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}SCREENSHOT: Dropdown-ul "Load Example" cu programele disponibile\vspace{2cm}}}
+			\caption{Selectorul de programe predefinite}
+			\label{fig:program_selector}
+		\end{figure}
+		
+		\subsection{Rezultate și testare}
+		
+		Simulatorul a fost testat extensiv cu multiple scenarii:
+		
+		\subsubsection{Test 1: Data Hazards cu Forwarding}
+		
+		\begin{lstlisting}[style=mipsstyle]
+	ADDI $1, $0, 10    # $1 = 10
+	ADDI $2, $0, 20    # $2 = 20
+	ADD $3, $1, $2     # $3 = 30 (forwarding)
+	SUB $4, $3, $1     # $4 = 20 (forwarding de la ADD)
+		\end{lstlisting}
+		
+		\textbf{Rezultat}: \$3=30, \$4=20. Zero stalls - forwarding rezolvă toate dependențele.
+		
+		\subsubsection{Test 2: Load-Use Hazard}
+		
+		\begin{lstlisting}[style=mipsstyle]
+	SW $3, 0($0)       # Stocheaza 30 in memorie
+	LW $5, 0($0)       # Incarca 30 in $5
+	ADD $6, $5, $1     # Foloseste $5 - STALL necesar!
+		\end{lstlisting}
+		
+		\textbf{Rezultat}: Un stall detectat. \$5=30, \$6=40.
+		
+		\subsubsection{Test 3: Branch Loop}
+		
+		\begin{lstlisting}[style=mipsstyle]
+	ADDI $1, $0, 0     # Counter = 0
+	ADDI $2, $0, 5     # Limit = 5
+	ADDI $1, $1, 1     # Counter++
+	BEQ $1, $2, 1      # If counter == limit, exit
+	J 2                # Repeat loop
+	ADDI $3, $0, 999   # Done marker
+		\end{lstlisting}
+		
+		\textbf{Rezultat}: \$1=5, \$2=5, \$3=999. Bucla se execută de 5 ori.
+		
+		\subsubsection{Test 4: Program complex}
+		
+		\begin{lstlisting}[style=mipsstyle]
+	ADDI $1, $0, 3     # Init
+	ADDI $2, $0, 0     # Sum = 0
+	ADD $2, $2, $1     # Sum loop (3+2+1+0 = 6)
+	ADDI $1, $1, -1
+	BGEZ $1, -3
+	SW $2, 0($0)       # Store sum
+	LW $3, 0($0)       # Load sum
+	ADD $4, $3, $3     # $4 = 12
+	SLL $5, $4, 2      # $5 = 48
+		\end{lstlisting}
+		
+		\textbf{Rezultat}: \$2=6, \$3=6, \$4=12, \$5=48.
+		
+		% TODO: Screenshot cu rezultatele testelor în GUI
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{3cm}SCREENSHOT: Tabelul de registre după rularea programului complex\vspace{3cm}}}
+			\caption{Rezultatele testelor - valorile registrelor}
+			\label{fig:test_results}
+		\end{figure}
+		
+		% TODO: Screenshot cu pipeline în timpul execuției
+		\begin{figure}[H]
+			\centering
+			\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}SCREENSHOT: Vizualizarea pipeline cu instrucțiuni în toate cele 5 etape\vspace{2cm}}}
+			\caption{Pipeline cu 5 instrucțiuni în execuție simultană}
+			\label{fig:pipeline_full}
+		\end{figure}
+		
+		\subsection{Statistici și performanță}
+		
+		GUI-ul afișează în timp real:
+		\begin{itemize}[nosep]
+			\item \textbf{Cycle count}: Numărul total de cicluri executate
+			\item \textbf{Stall count}: Numărul de stalls pentru load-use hazards
+			\item \textbf{Status}: Ready / Loaded / Running / Complete
+		\end{itemize}
+		
+		Pentru programul "Basic Hazards" (7 instrucțiuni):
+		\begin{itemize}[nosep]
+			\item Cicluri totale: 12
+			\item Stalls: 1 (load-use hazard între LW și ADD)
+			\item Forwarding-uri: multiple (rezolvate fără stalls)
+		\end{itemize}
+		
+		\subsection{Probleme întâmpinate și soluții}
+		
+		Pe parcursul implementării proiectului, cele mai dificile probleme au fost legate de detectarea și rezolvarea hazardurilor de date. Această secțiune descrie procesul de debugging și soluțiile găsite.
+		
+		\subsubsection{Problema 1: Hazardurile RAW (Read After Write) - Forwarding incorect}
+		
+		\textbf{Descrierea problemei:}
+		Prima implementare a forwarding-ului nu funcționa corect. Instrucțiunile consecutive care depindeau una de alta produceau rezultate greșite.
+		
+		\textbf{Exemplu problematic:}
+		\begin{lstlisting}[style=mipsstyle]
+ADDI $1, $0, 10    # $1 = 10
+ADD $2, $1, $1     # $2 ar trebui sa fie 20, dar era 0
+		\end{lstlisting}
+		
+		\textbf{Cauza descoperită:}
+		Forwarding-ul verifica registrul greșit. La instrucțiunile R-type (ADD, SUB), destinația este \texttt{rd}, dar la I-type (ADDI, LW), destinația este \texttt{rt}. Codul inițial presupunea că toate instrucțiunile scriu în \texttt{rd}.
+		
+		\textbf{Încercări eșuate:}
+		\begin{enumerate}[nosep]
+			\item Am încercat să verific doar \texttt{exMem.rd} - nu funcționa pentru ADDI
+			\item Am încercat să verific atât \texttt{rd} cât și \texttt{rt} - cauza duplicate
+		\end{enumerate}
+		
+		\textbf{Soluția finală:}
+		S-a introdus câmpul \texttt{writeRegister} care este setat corect în funcție de tipul instrucțiunii:
+		
+		\begin{lstlisting}[style=javastyle]
+// In execute() - determinam registrul destinatie corect
+if (idEx.regDst) {
+    exMem.writeRegister = idEx.rd;   // R-type
+} else {
+    exMem.writeRegister = idEx.rt;   // I-type (ADDI, LW)
+}
+		\end{lstlisting}
+		
+		Apoi forwarding-ul verifică doar acest câmp:
+		
+		\begin{lstlisting}[style=javastyle]
+if (exMem.writeRegister == sourceReg) {
+    return exMem.aluResult;  // Forward!
+}
+		\end{lstlisting}
+		
+		\subsubsection{Problema 2: Load-Use Hazard - Stall-ul nu funcționa}
+		
+		\textbf{Descrierea problemei:}
+		Secvența LW urmată de o instrucțiune care folosește registrul încărcat producea rezultate greșite, chiar și cu stall implementat:
+		
+		\begin{lstlisting}[style=mipsstyle]
+LW $5, 0($0)       # Incarca valoare in $5
+ADD $6, $5, $1     # Foloseste $5 - rezultat gresit!
+		\end{lstlisting}
+		
+		\textbf{Problema inițială:}
+		Stall-ul era detectat, dar instrucțiunea ADD tot primea valoarea veche din \texttt{\$5}, nu valoarea încărcată.
+		
+		\textbf{Debugging efectuat:}
+		Am adăugat mesaje de debug pentru a urmări valorile:
+		\begin{lstlisting}[style=javastyle]
+System.out.println("LW in EX, dest=$" + idEx.rt);
+System.out.println("Current instr uses $" + instr.getRs());
+		\end{lstlisting}
+		
+		\textbf{Cauza descoperită:}
+		Detectarea hazardului era corectă, dar stall-ul nu oprea instrucțiunea în IF/ID. PC-ul era decrementat, dar instrucțiunea din IF/ID era deja suprascrisă.
+		
+		\textbf{Soluția implementată:}
+		La detectarea hazardului:
+		\begin{enumerate}[nosep]
+			\item Se inserează bubble în ID/EX (\texttt{idEx.clear()})
+			\item Se decrementează PC pentru a re-prelua instrucțiunea
+			\item NU se modifica IF/ID - instrucțiunea rămâne acolo
+			\item Se face \texttt{return} imediat din decode() pentru a nu continua
+		\end{enumerate}
+		
+		\begin{lstlisting}[style=javastyle]
+if (detectLoadUseHazard(instr)) {
+    idEx.clear();      // Bubble in pipeline
+    pc--;              // Re-fetch next cycle
+    stallCount++;
+    return;            // IMPORTANT: stop decode aici!
+}
+		\end{lstlisting}
+		
+		\subsubsection{Problema 3: Forwarding MEM-to-EX - Datele dispăreau}
+		
+		\textbf{Descrierea problemei:}
+		Forwarding-ul de la etapa MEM către EX (pentru dependențe la distanță de 2 instrucțiuni) nu funcționa. Datele din \texttt{memWb} erau mereu 0.
+		
+		\textbf{Cauza descoperită:}
+		Din cauza ordinii inverse de execuție (WB→MEM→EX→ID→IF), când ajungeam în execute(), etapa memoryAccess() deja suprascrisese \texttt{memWb} cu date noi.
+		
+		\textbf{Soluția implementată:}
+		Se salvează starea \texttt{memWb} ÎNAINTE de a rula etapele:
+		
+		\begin{lstlisting}[style=javastyle]
+// La inceputul ciclului, salvam memWb
+savedMemWb.instruction = memWb.instruction;
+savedMemWb.aluResult = memWb.aluResult;
+savedMemWb.writeRegister = memWb.writeRegister;
+
+// Apoi rulam etapele
+writeback();
+memoryAccess();  // Suprascrie memWb
+execute();       // Foloseste savedMemWb pentru forwarding
+		\end{lstlisting}
+		
+		În metoda \texttt{getForwardedValue()}, se folosește \texttt{savedMemWb} în loc de \texttt{memWb}:
+		
+		\begin{lstlisting}[style=javastyle]
+// MEM-to-EX forwarding - folosim SAVED values
+if (savedMemWb.writeRegister == sourceReg) {
+    return savedMemWb.aluResult;
+}
+		\end{lstlisting}
+		
+		\subsubsection{Lecții învățate}
+		
+		\begin{itemize}[nosep]
+			\item Ordinea de execuție în software trebuie să simuleze corect paralelismul hardware
+			\item Salvarea stărilor intermediare este esențială când ordinea afectează rezultatele
+			\item Debugging-ul cu mesaje detaliate ajută la identificarea momentului exact când datele devin incorecte
+			\item Fiecare tip de instrucțiune (R, I, J) trebuie tratat separat pentru câmpurile destinație
+		\end{itemize}
+		
+		\subsection{Concluzii}
+		
+		Proiectul a atins toate obiectivele propuse:
+		
+		\begin{itemize}[nosep]
+			\item Simulator funcțional pentru arhitectura pipeline MIPS în 5 etape
+			\item Detectare și rezolvare a hazardurilor de date prin forwarding (EX-to-EX și MEM-to-EX)
+			\item Detectare și rezolvare a hazardurilor load-use prin stalling cu bubble
+			\item Suport pentru instrucțiuni de branch (BEQ, BGEZ) și jump (J) cu pipeline flush
+			\item Interfață grafică intuitivă cu temă dark pentru vizualizare și debugging
+			\item Selector de programe cu 5 exemple predefinite
+			\item Execuție pas-cu-pas și continuă
+			\item Afișare în timp real a registrelor, memoriei și statisticilor
+		\end{itemize}
+		
+		Simulatorul poate fi folosit în scop educațional pentru a demonstra conceptele fundamentale ale arhitecturii pipeline și mecanismele de gestionare a hazardurilor.
+		
+		\section{Bibliografie}
+		
+		\begin{enumerate}[label={[\arabic*]}]
+			\item Cursul de \textit{Structura Sistemelor de Calcul} – materiale de curs și laborator
+			\item Cursul de \textit{Arhitectura Calculatoarelor} – materiale de curs și laborator
+			\item Cursul de \textit{Programare Orientată pe Obiecte (OOP)} – materiale de curs și laborator
+			\item Patterson, D.A., Hennessy, J.L. - "Computer Organization and Design: The Hardware/Software Interface", 5th Edition
+			\item MIPS Architecture Documentation - MIPS Technologies Inc.
+		\end{enumerate}
+		
+	\end{document}
